@@ -30,7 +30,7 @@ export async function POST(_request: Request, { params }: Params) {
     );
     }
 
-    const confirmed = await prisma.$transaction(async (tx) => {
+    const confirmed = await prisma.$transaction(async (tx: any) => {
     await tx.stock.update({
         where: {
         productId_warehouseId: {

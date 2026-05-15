@@ -30,8 +30,8 @@ export async function POST(_request: Request, { params }: Params) {
     );
     }
 
-    const confirmed = await prisma.$transaction(async (tx: any) => {
-    await tx.stock.update({
+    const [, confirmed] = await prisma.$transaction([
+    prisma.stock.update({
         where: {
         productId_warehouseId: {
             productId: reservation.productId,
@@ -46,9 +46,9 @@ export async function POST(_request: Request, { params }: Params) {
             decrement: reservation.quantity,
         },
         },
-    });
+    }),
 
-    return tx.reservation.update({
+    prisma.reservation.update({
         where: { id },
         data: {
         status: "CONFIRMED",
@@ -57,8 +57,8 @@ export async function POST(_request: Request, { params }: Params) {
         product: true,
         warehouse: true,
         },
-    });
-    });
+    }),
+    ]);
 
     return NextResponse.json(confirmed);
 }

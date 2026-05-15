@@ -18,7 +18,7 @@ const products = await prisma.product.findMany({
     },
 });
 
-const result = products.map((product) => ({
+const result = products.map((product: any) => ({
     id: product.id,
     name: product.name,
     description: product.description,

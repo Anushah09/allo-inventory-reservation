@@ -11,7 +11,7 @@ const expiredReservations = await prisma.reservation.findMany({
 });
 
 for (const reservation of expiredReservations) {
-    await prisma.$transaction(async (tx) => {
+    await prisma.$transaction(async (tx: any) => {
     const latest = await tx.reservation.findUnique({
         where: {
         id: reservation.id,

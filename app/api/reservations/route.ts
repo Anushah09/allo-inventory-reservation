@@ -33,7 +33,7 @@ export async function POST(request: Request) {
     const { stockId, quantity } = parsed.data;
 
     try {
-    const reservation = await prisma.$transaction(async (tx) => {
+    const reservation = await prisma.$transaction(async (tx: any) => {
         const updatedStocks = await tx.$queryRaw<UpdatedStock[]>(
         Prisma.sql`
             UPDATE "Stock"

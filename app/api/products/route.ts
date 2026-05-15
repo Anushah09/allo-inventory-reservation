@@ -24,7 +24,7 @@ const result = products.map((product: any) => ({
     description: product.description,
     imageUrl: product.imageUrl,
 
-    warehouses: product.stocks.map((stock) => ({
+warehouses: product.stocks.map((stock: any) => ({
     stockId: stock.id,
     warehouseId: stock.warehouseId,
     warehouseName: stock.warehouse.name,

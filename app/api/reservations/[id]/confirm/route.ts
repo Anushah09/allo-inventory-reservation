@@ -13,10 +13,7 @@ export async function POST(_request: Request, { params }: Params) {
     });
 
     if (!reservation) {
-    return NextResponse.json(
-        { error: "Reservation not found" },
-        { status: 404 }
-    );
+    return NextResponse.json({ error: "Reservation not found" }, { status: 404 });
     }
 
     if (reservation.status !== "PENDING") {
@@ -24,41 +21,36 @@ export async function POST(_request: Request, { params }: Params) {
     }
 
     if (reservation.expiresAt < new Date()) {
-    return NextResponse.json(
-        { error: "Reservation expired" },
-        { status: 410 }
-    );
+    return NextResponse.json({ error: "Reservation expired" }, { status: 410 });
     }
 
-    const [, confirmed] = await prisma.$transaction([
-    prisma.stock.update({
-        where: {
+    const updatedStock = await prisma.stock.update({
+    where: {
         productId_warehouseId: {
-            productId: reservation.productId,
-            warehouseId: reservation.warehouseId,
+        productId: reservation.productId,
+        warehouseId: reservation.warehouseId,
         },
-        },
-        data: {
+    },
+    data: {
         totalUnits: {
-            decrement: reservation.quantity,
+        decrement: reservation.quantity,
         },
         reservedUnits: {
-            decrement: reservation.quantity,
+        decrement: reservation.quantity,
         },
-        },
-    }),
+    },
+    });
 
-    prisma.reservation.update({
-        where: { id },
-        data: {
+    const confirmed = await prisma.reservation.update({
+    where: { id },
+    data: {
         status: "CONFIRMED",
-        },
-        include: {
+    },
+    include: {
         product: true,
         warehouse: true,
-        },
-    }),
-    ]);
+    },
+    });
 
     return NextResponse.json(confirmed);
 }

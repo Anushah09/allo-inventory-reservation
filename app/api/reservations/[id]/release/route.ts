@@ -13,41 +13,36 @@ export async function POST(_request: Request, { params }: Params) {
     });
 
     if (!reservation) {
-    return NextResponse.json(
-        { error: "Reservation not found" },
-        { status: 404 }
-    );
+    return NextResponse.json({ error: "Reservation not found" }, { status: 404 });
     }
 
     if (reservation.status !== "PENDING") {
     return NextResponse.json(reservation);
     }
 
-    const released = await prisma.$transaction(async (tx) => {
-    await tx.stock.update({
-        where: {
+    await prisma.stock.update({
+    where: {
         productId_warehouseId: {
-            productId: reservation.productId,
-            warehouseId: reservation.warehouseId,
+        productId: reservation.productId,
+        warehouseId: reservation.warehouseId,
         },
-        },
-        data: {
+    },
+    data: {
         reservedUnits: {
-            decrement: reservation.quantity,
+        decrement: reservation.quantity,
         },
-        },
+    },
     });
 
-    return tx.reservation.update({
-        where: { id },
-        data: {
+    const released = await prisma.reservation.update({
+    where: { id },
+    data: {
         status: "RELEASED",
-        },
-        include: {
+    },
+    include: {
         product: true,
         warehouse: true,
-        },
-    });
+    },
     });
 
     return NextResponse.json(released);

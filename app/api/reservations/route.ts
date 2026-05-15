@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { releaseExpiredReservations } from "@/lib/reservations";
 
@@ -8,14 +7,6 @@ const reserveSchema = z.object({
     stockId: z.string().min(1),
     quantity: z.number().int().positive(),
 });
-
-type UpdatedStock = {
-    id: string;
-    productId: string;
-    warehouseId: string;
-    totalUnits: number;
-    reservedUnits: number;
-};
 
 export async function POST(request: Request) {
     await releaseExpiredReservations();
@@ -34,21 +25,32 @@ export async function POST(request: Request) {
 
     try {
     const reservation = await prisma.$transaction(async (tx: any) => {
-        const updatedStocks = await tx.$queryRaw<UpdatedStock[]>(
-        Prisma.sql`
-            UPDATE "Stock"
-            SET "reservedUnits" = "reservedUnits" + ${quantity}
-            WHERE "id" = ${stockId}
-            AND ("totalUnits" - "reservedUnits") >= ${quantity}
-            RETURNING "id", "productId", "warehouseId", "totalUnits", "reservedUnits";
-        `
-        );
-
-        const stock = updatedStocks[0];
+        const stock = await tx.stock.findUnique({
+        where: {
+            id: stockId,
+        },
+        });
 
         if (!stock) {
         throw new Error("INSUFFICIENT_STOCK");
         }
+
+        const availableUnits = stock.totalUnits - stock.reservedUnits;
+
+        if (availableUnits < quantity) {
+        throw new Error("INSUFFICIENT_STOCK");
+        }
+
+        await tx.stock.update({
+        where: {
+            id: stockId,
+        },
+        data: {
+            reservedUnits: {
+            increment: quantity,
+            },
+        },
+        });
 
       const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
 
